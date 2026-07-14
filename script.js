@@ -596,10 +596,11 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
       else split++;
     }
 
+    const totalRatings = totalDry + totalUnc + totalWet;
     const distParts = [];
-    if (totalDry > 0) distParts.push(`${totalDry} agree dry`);
-    if (totalUnc > 0) distParts.push(`${totalUnc} split`);
-    if (totalWet > 0) distParts.push(`${totalWet} agree wet`);
+    if (totalDry > 0) distParts.push(`${totalDry}/${totalRatings} dry`);
+    if (totalUnc > 0) distParts.push(`${totalUnc}/${totalRatings} mixed`);
+    if (totalWet > 0) distParts.push(`${totalWet}/${totalRatings} wet`);
     const distText = distParts.join(' \u00b7 ');
 
     let status, statusText, statusClass;
@@ -630,9 +631,9 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     let detailHTML = '';
     for (const mb of modelBreakdown) {
       const bits = [];
-      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry} dry hr</span>`);
-      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain} mixed</span>`);
-      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet} wet hr</span>`);
+      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry}/${pRows.length} dry</span>`);
+      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain}/${pRows.length} mixed</span>`);
+      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet}/${pRows.length} wet</span>`);
       if (!bits.length) bits.push('<span class="mb-missing">no data</span>');
       detailHTML += `<div class="mb-row"><span class="mb-label" title="${mb.label}">${mb.short}</span> ${bits.join(' \u00b7 ')}</div>`;
     }
