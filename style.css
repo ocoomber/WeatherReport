@@ -238,6 +238,7 @@ body {
   color: var(--gray-700);
   margin-bottom: 0.15rem;
 }
+.forecast-heading:focus { outline: none; }
 
 .sun-info {
   font-size: 0.8rem;
