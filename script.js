@@ -19,26 +19,20 @@ const METRICS = [
   { key: 'wind_gusts_10m', label: 'Wind Gusts (10m)', unit: 'km/h' },
 ];
 
-const ENSEMBLE_MODELS = [
-  { id: 'ecmwf_ifs025', short: 'ECMWF', label: 'ECMWF IFS ENS (51 members)' },
-  { id: 'gfs_seamless', short: 'GFS', label: 'NOAA GFS ENS (31 members)' },
-  { id: 'icon_seamless', short: 'ICON', label: 'DWD ICON EPS (40 members)' },
-  { id: 'gem_seamless', short: 'GEM', label: 'Env. Canada GEM EPS (21 members)' },
-];
-
 const DEFAULT_START = 6;
 const DEFAULT_END = 22;
+const AGREEMENT_THRESHOLD = 0.6;
 
 /* ── DOM refs ── */
 
 const form = document.getElementById('search-form');
 const input = document.getElementById('postcode-input');
 const checkBtn = document.getElementById('check-btn');
+const locateBtn = document.getElementById('locate-btn');
 const loadingEl = document.getElementById('loading-indicator');
 const errorEl = document.getElementById('error-display');
 const resultsSection = document.getElementById('results-section');
 const forecastHeading = document.getElementById('forecast-heading');
-const summaryLineEl = document.getElementById('summary-line');
 const tablesContainer = document.getElementById('tables-container');
 const hourStart = document.getElementById('hour-start');
 const hourEnd = document.getElementById('hour-end');
@@ -72,7 +66,6 @@ function normalisePostcode(pc) {
 /* ── State ── */
 
 let lastRawData = null;
-let lastEnsembleData = null;
 let lastSunrise = null;
 let lastSunset = null;
 let lastRows = null;
@@ -114,9 +107,43 @@ async function geocode(postcode) {
   const res = await fetch(url);
   if (res.status === 404) throw new Error(`Postcode "${input.value.trim().toUpperCase()}" not found. Check it and try again.`);
   if (!res.ok) throw new Error(`Geocoding failed (HTTP ${res.status}). Try again.`);
-  const body = await res.json();
+  let body;
+  try { body = await res.json(); } catch { throw new Error('Invalid response from postcodes.io.'); }
   if (!body || !body.result) throw new Error('Unexpected response from postcodes.io.');
   return { lat: body.result.latitude, lon: body.result.longitude };
+}
+
+async function reverseGeocode(lat, lon) {
+  const url = `https://api.postcodes.io/postcodes?lon=${lon}&lat=${lat}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  let body;
+  try { body = await res.json(); } catch { return null; }
+  if (!body || !body.result || !body.result.length) return null;
+  return body.result[0].postcode;
+}
+
+async function handleUseLocation() {
+  if (!('geolocation' in navigator)) { showError('Geolocation is not available in this browser.'); return; }
+  locateBtn.disabled = true;
+  locateBtn.textContent = 'Locating…';
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+    });
+    const { latitude: lat, longitude: lon } = pos.coords;
+    const pc = await reverseGeocode(lat, lon);
+    if (!pc) { showError('Could not find a postcode for your location. Enter a postcode instead.'); return; }
+    input.value = pc;
+    form.requestSubmit();
+  } catch (err) {
+    if (err.code === 1) showError('Location access denied. Enable location services or enter a postcode.');
+    else if (err.code === 2) showError('Location unavailable. Try again or enter a postcode.');
+    else showError('Could not get location. Enter a postcode instead.');
+  } finally {
+    locateBtn.disabled = false;
+    locateBtn.textContent = 'Use my location';
+  }
 }
 
 async function fetchForecast(lat, lon) {
@@ -133,25 +160,9 @@ async function fetchForecast(lat, lon) {
   });
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Weather forecast failed (HTTP ${res.status}). Try again.`);
-  const body = await res.json();
+  let body;
+  try { body = await res.json(); } catch { throw new Error('Invalid response from weather service.'); }
   if (body.error) throw new Error(body.reason || 'Weather service returned an error.');
-  return body;
-}
-
-async function fetchEnsemble(lat, lon) {
-  const modelIds = ENSEMBLE_MODELS.map(m => m.id).join(',');
-  const url = 'https://api.open-meteo.com/v1/ensemble?' + new URLSearchParams({
-    latitude: lat,
-    longitude: lon,
-    hourly: 'precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover',
-    models: modelIds,
-    forecast_days: '7',
-    timezone: 'Europe/London',
-  });
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const body = await res.json();
-  if (body.error) return null;
   return body;
 }
 
@@ -293,84 +304,20 @@ function modelDayAgreement(rows, modelsPresent) {
 
 /* ── Summary generation ── */
 
-function generateSummary(rows, modelsPresent) {
-  if (!rows.length || !modelsPresent.length) return 'No forecast data available for this date.';
-
-  const visibleModels = modelsPresent.filter(m => m.present);
-  const numModels = visibleModels.length;
-  if (numModels === 0) return 'No model data returned for the selected hours.';
-
-  const aggr = hourlyAgreement(rows, visibleModels);
-  if (!aggr.length) return 'No data for the selected hours.';
-
-  const dryHours = aggr.filter(a => a.total > 0 && a.dry >= a.total * 0.6);
-  const wetHours = aggr.filter(a => a.total > 0 && a.wet >= a.total * 0.6);
-  const splitHours = aggr.filter(a => a.total > 0 && a.dry < a.total * 0.6 && a.wet < a.total * 0.6);
-
-  if (splitHours.length > rows.length * 0.5) {
-    return `Low confidence — models disagree on rain risk for most of the day. Check again closer to the date.`;
+function getModelRange(metricKey, row, visibleModels) {
+  const values = [];
+  for (const mp of visibleModels) {
+    const val = row.models[mp.id]?.[metricKey];
+    if (val !== undefined && val !== null) values.push(Number(val));
   }
-
-  const parts = [];
-  let i = 0;
-  while (i < rows.length) {
-    const a = aggr[i];
-    let j = i;
-    const state = a.total > 0 && a.dry >= a.total * 0.6 ? 'dry' : (a.total > 0 && a.wet >= a.total * 0.6 ? 'wet' : 'split');
-    while (j < rows.length) {
-      const aj = aggr[j];
-      const sj = aj.total > 0 && aj.dry >= aj.total * 0.6 ? 'dry' : (aj.total > 0 && aj.wet >= aj.total * 0.6 ? 'wet' : 'split');
-      if (sj !== state) break;
-      j++;
-    }
-    const startLabel = formatHour(rows[i].hour);
-    const endLabel = formatHour(rows[j - 1].hour);
-    if (state === 'dry') parts.push(`dry until ${endLabel}`);
-    else if (state === 'wet') parts.push(`rain from ${startLabel}`);
-    else parts.push(`uncertain around ${startLabel}`);
-    i = j;
-  }
-
-  const maxAgreePct = Math.max(...aggr.map(a => a.total > 0 ? a.dry / a.total : 0));
-  const agreementLevel = maxAgreePct >= 0.8 ? 'strong agreement' : (maxAgreePct >= 0.6 ? 'moderate agreement' : 'low confidence');
-
-  const summary = parts.join('; ');
-  return `${numModels} of ${MODELS.length} models available. ${summary}. ${agreementLevel.charAt(0).toUpperCase() + agreementLevel.slice(1)}.`;
-}
-
-/* ── Ensemble helpers ── */
-
-function getEnsembleSpread(metricKey, hour, ensembleData, selectedDate) {
-  if (!ensembleData || !ensembleData.hourly) return null;
-  const times = ensembleData.hourly.time;
-  const ds = dateStr(selectedDate);
-  const target = `${ds}T${String(hour).padStart(2, '0')}:00`;
-  const idx = times.indexOf(target);
-  if (idx === -1) return null;
-
-  const metricKEYS = { precipitation: 'precipitation', wind_speed_10m: 'wind_speed_10m', wind_gusts_10m: 'wind_gusts_10m', cloud_cover: 'cloud_cover' };
-  const base = metricKEYS[metricKey];
-  if (!base) return null;
-
-  let p10Sum = 0, p90Sum = 0, count = 0;
-  for (const m of ENSEMBLE_MODELS) {
-    const p10Key = `${base}_${m.id}_p10`;
-    const p90Key = `${base}_${m.id}_p90`;
-    const p10 = ensembleData.hourly[p10Key]?.[idx];
-    const p90 = ensembleData.hourly[p90Key]?.[idx];
-    if (p10 !== undefined && p10 !== null && p90 !== undefined && p90 !== null) {
-      p10Sum += p10; p90Sum += p90; count++;
-    }
-  }
-  if (count === 0) return null;
-  return { p10: p10Sum / count, p90: p90Sum / count };
+  if (values.length < 2) return null;
+  return { low: Math.min(...values), high: Math.max(...values) };
 }
 
 /* ── Table builder ── */
 
-function buildTables(rows, modelsPresent, startH, endH) {
+function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
   tablesContainer.innerHTML = '';
-  const filtered = filterHours(rows, startH, endH);
   if (!filtered.length) {
     tablesContainer.innerHTML = '<p class="no-data">No data for the selected hour range.</p>';
     return;
@@ -382,7 +329,6 @@ function buildTables(rows, modelsPresent, startH, endH) {
     return;
   }
 
-  const agreement = hourlyAgreement(filtered, visibleModels);
   const modelDayAgree = modelDayAgreement(filtered, visibleModels);
 
   for (const metric of METRICS) {
@@ -461,8 +407,8 @@ function buildTables(rows, modelsPresent, startH, endH) {
         } else {
           const pct = Math.round((a.dry / a.total) * 100);
           if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' high'; }
-          else if (pct >= 50) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
-          else if (a.wet >= a.total * 0.5) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
+          else if (pct >= Math.round(AGREEMENT_THRESHOLD * 100)) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
+          else if (a.wet >= a.total * AGREEMENT_THRESHOLD) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
           else { aTd.textContent = `Split`; aTd.className += ' medium'; }
         }
         tr.appendChild(aTd);
@@ -471,10 +417,10 @@ function buildTables(rows, modelsPresent, startH, endH) {
       /* Range column */
       const rTd = document.createElement('td');
       rTd.className = 'range-col';
-      const spread = getEnsembleSpread(metric.key, row.hour, lastEnsembleData, lastSelectedDate);
-      if (spread) {
+      const range = getModelRange(metric.key, row, visibleModels);
+      if (range) {
         const decimals = metric.key === 'precipitation' ? 1 : 0;
-        rTd.textContent = `${fmt(spread.p10, '', decimals)}\u2013${fmt(spread.p90, '', decimals)}`;
+        rTd.textContent = `${fmt(range.low, '', decimals)}\u2013${fmt(range.high, '', decimals)}`;
       } else {
         rTd.textContent = '\u2014';
         rTd.className += ' cell-missing';
@@ -497,7 +443,7 @@ function buildTables(rows, modelsPresent, startH, endH) {
         const md = modelDayAgree.find(a => a.modelId === mp.id);
         if (md && md.total > 0) {
           td.textContent = `${md.dry}/${md.total}`;
-          td.className = md.dry / md.total >= 0.6 ? 'model-agree-dry' : 'model-agree-wet';
+          td.className = md.dry / md.total >= AGREEMENT_THRESHOLD ? 'model-agree-dry' : 'model-agree-wet';
         } else {
           td.textContent = '\u2014';
           td.className = 'cell-missing';
@@ -527,8 +473,8 @@ function getVerdict(filtered, visibleModels, aggr) {
     if (a.total === 0) continue;
     const dryPct = a.dry / a.total;
     const wetPct = a.wet / a.total;
-    if (dryPct >= 0.6) dry++;
-    else if (wetPct >= 0.6) wet++;
+    if (dryPct >= AGREEMENT_THRESHOLD) dry++;
+    else if (wetPct >= AGREEMENT_THRESHOLD) wet++;
     else split++;
   }
   const total = dry + wet + split;
@@ -589,8 +535,8 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
       totalDry += a.dry; totalUnc += a.uncertain; totalWet += a.wet;
       const dryPct = a.dry / a.total;
       const wetPct = a.wet / a.total;
-      if (dryPct >= 0.6) dry++;
-      else if (wetPct >= 0.6) wet++;
+      if (dryPct >= AGREEMENT_THRESHOLD) dry++;
+      else if (wetPct >= AGREEMENT_THRESHOLD) wet++;
       else split++;
     }
 
@@ -680,8 +626,8 @@ function buildHourStrip(filtered, visibleModels, aggr) {
     } else {
       const dryPct = a.dry / a.total;
       const wetPct = a.wet / a.total;
-      if (dryPct >= 0.6) block.className += ' hour-dry';
-      else if (wetPct >= 0.6) block.className += ' hour-wet';
+      if (dryPct >= AGREEMENT_THRESHOLD) block.className += ' hour-dry';
+      else if (wetPct >= AGREEMENT_THRESHOLD) block.className += ' hour-wet';
       else block.className += ' hour-split';
       block.innerHTML = `<div class="hour-block-label">${formatHour(filtered[i].hour)}</div><div class="hour-block-val">${a.dry}/${a.total}</div>`;
     }
@@ -758,13 +704,9 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
   const verdict = getVerdict(filtered, visibleModels, aggr);
   buildVerdictBanner(verdict);
 
-  const summary = generateSummary(filtered, modelsPresent);
-  summaryLineEl.textContent = summary;
-  summaryLineEl.classList.remove('hidden');
-
   buildPeriodSummary(filtered, visibleModels, aggr);
   buildHourStrip(filtered, visibleModels, aggr);
-  buildTables(rows, modelsPresent, startH, endH);
+  buildTables(rows, modelsPresent, startH, endH, filtered, aggr);
 
   resultsSection.classList.remove('hidden');
   errorEl.classList.add('hidden');
@@ -802,17 +744,16 @@ async function handleSubmit(e) {
   try {
     const { lat, lon } = await geocode(raw);
     if (token !== requestToken) { hideLoading(); return; }
-    const [forecastRes, ensembleRes] = await Promise.all([fetchForecast(lat, lon), fetchEnsemble(lat, lon)]);
+    const forecastRes = await fetchForecast(lat, lon);
     if (token !== requestToken) { hideLoading(); return; }
     lastRawData = forecastRes;
-    lastEnsembleData = ensembleRes;
     localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
     initDatePicker();
     const restoredDate = localStorage.getItem('weather_date');
     if (restoredDate) selectDay.value = restoredDate;
     handleDateChange();
   } catch (err) {
-    if (token !== requestToken) return;
+    if (token !== requestToken) { hideLoading(); return; }
     showError(err.message || 'Something went wrong. Try again.');
     return;
   }
@@ -836,6 +777,7 @@ initHourRange();
 initDatePicker();
 form.addEventListener('submit', handleSubmit);
 updateBtn.addEventListener('click', handleDateChange);
+locateBtn.addEventListener('click', handleUseLocation);
 hourStart.addEventListener('change', handleRangeChange);
 hourEnd.addEventListener('change', handleRangeChange);
 
