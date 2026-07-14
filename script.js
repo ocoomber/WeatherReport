@@ -414,13 +414,15 @@ function buildTables(rows, modelsPresent, startH, endH) {
       th.className = 'model-label';
       headRow.appendChild(th);
     }
-    const agreeTh = document.createElement('th');
-    agreeTh.textContent = 'Agreement';
-    headRow.appendChild(agreeTh);
     const rangeTh = document.createElement('th');
     rangeTh.textContent = 'Range';
     rangeTh.className = 'range-col';
     headRow.appendChild(rangeTh);
+    if (metric.key === 'precipitation_probability') {
+      const agreeTh = document.createElement('th');
+      agreeTh.textContent = 'Agreement';
+      headRow.appendChild(agreeTh);
+    }
     thead.appendChild(headRow);
     table.appendChild(thead);
 
@@ -449,20 +451,22 @@ function buildTables(rows, modelsPresent, startH, endH) {
         tr.appendChild(td);
       }
 
-      /* Agreement column */
-      const aTd = document.createElement('td');
-      aTd.className = 'agreement-col';
-      const a = agreement[ri];
-      if (a.total === 0) {
-        aTd.textContent = '\u2014';
-      } else {
-        const pct = Math.round((a.dry / a.total) * 100);
-        if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' high'; }
-        else if (pct >= 50) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
-        else if (a.wet >= a.total * 0.5) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
-        else { aTd.textContent = `Split`; aTd.className += ' medium'; }
+      /* Agreement column (precip probability only) */
+      if (metric.key === 'precipitation_probability') {
+        const aTd = document.createElement('td');
+        aTd.className = 'agreement-col';
+        const a = agreement[ri];
+        if (a.total === 0) {
+          aTd.textContent = '\u2014';
+        } else {
+          const pct = Math.round((a.dry / a.total) * 100);
+          if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' high'; }
+          else if (pct >= 50) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
+          else if (a.wet >= a.total * 0.5) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
+          else { aTd.textContent = `Split`; aTd.className += ' medium'; }
+        }
+        tr.appendChild(aTd);
       }
-      tr.appendChild(aTd);
 
       /* Range column */
       const rTd = document.createElement('td');
@@ -480,32 +484,33 @@ function buildTables(rows, modelsPresent, startH, endH) {
       tbody.appendChild(tr);
     }
 
-    /* Agreement row at bottom */
-    const agreeTr = document.createElement('tr');
-    agreeTr.className = 'agreement-row';
-    const labelTd = document.createElement('td');
-    labelTd.textContent = 'Dry hours';
-    agreeTr.appendChild(labelTd);
+    /* Agreement row at bottom (precip probability only) */
+    if (metric.key === 'precipitation_probability') {
+      const agreeTr = document.createElement('tr');
+      agreeTr.className = 'agreement-row';
+      const labelTd = document.createElement('td');
+      labelTd.textContent = 'Dry hours';
+      agreeTr.appendChild(labelTd);
 
-    for (const mp of visibleModels) {
-      const td = document.createElement('td');
-      const md = modelDayAgree.find(a => a.modelId === mp.id);
-      if (md && md.total > 0) {
-        td.textContent = `${md.dry}/${md.total}`;
-        td.className = md.dry / md.total >= 0.6 ? 'model-agree-dry' : 'model-agree-wet';
-      } else {
-        td.textContent = '\u2014';
-        td.className = 'cell-missing';
+      for (const mp of visibleModels) {
+        const td = document.createElement('td');
+        const md = modelDayAgree.find(a => a.modelId === mp.id);
+        if (md && md.total > 0) {
+          td.textContent = `${md.dry}/${md.total}`;
+          td.className = md.dry / md.total >= 0.6 ? 'model-agree-dry' : 'model-agree-wet';
+        } else {
+          td.textContent = '\u2014';
+          td.className = 'cell-missing';
+        }
+        agreeTr.appendChild(td);
       }
-      agreeTr.appendChild(td);
+      const emptyAgreeTd = document.createElement('td');
+      agreeTr.appendChild(emptyAgreeTd);
+      const emptyRangeTd = document.createElement('td');
+      emptyRangeTd.className = 'range-col';
+      agreeTr.appendChild(emptyRangeTd);
+      tbody.appendChild(agreeTr);
     }
-
-    const emptyAgreeTd = document.createElement('td');
-    agreeTr.appendChild(emptyAgreeTd);
-    const emptyRangeTd = document.createElement('td');
-    emptyRangeTd.className = 'range-col';
-    agreeTr.appendChild(emptyRangeTd);
-    tbody.appendChild(agreeTr);
 
     table.appendChild(tbody);
     wrap.appendChild(table);
