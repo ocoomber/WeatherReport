@@ -54,11 +54,7 @@ function fmt(val, unit, decimals) {
 function _fmtTime(iso) { return iso.slice(11, 16); }
 
 function formatHour(h) {
-  const h24 = Number(h);
-  if (h24 === 0) return '12am';
-  if (h24 < 12) return h24 + 'am';
-  if (h24 === 12) return '12pm';
-  return (h24 - 12) + 'pm';
+  return String(Number(h)).padStart(2, '0') + ':00';
 }
 
 function normalizePostcode(pc) {
