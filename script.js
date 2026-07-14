@@ -464,9 +464,9 @@ function buildTables(rows, modelsPresent, startH, endH) {
         aTd.textContent = '\u2014';
       } else {
         const pct = Math.round((a.dry / a.total) * 100);
-        if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} dry`; aTd.className += ' high'; }
-        else if (pct >= 50) { aTd.textContent = `${a.dry}/${a.total} dry`; aTd.className += ' medium'; }
-        else if (a.wet >= a.total * 0.5) { aTd.textContent = `${a.wet}/${a.total} wet`; aTd.className += ' low'; }
+        if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' high'; }
+        else if (pct >= 50) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
+        else if (a.wet >= a.total * 0.5) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
         else { aTd.textContent = `Split`; aTd.className += ' medium'; }
       }
       tr.appendChild(aTd);
@@ -597,9 +597,9 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     }
 
     const distParts = [];
-    if (totalDry > 0) distParts.push(`${totalDry} dry`);
-    if (totalUnc > 0) distParts.push(`${totalUnc} uncertain`);
-    if (totalWet > 0) distParts.push(`${totalWet} wet`);
+    if (totalDry > 0) distParts.push(`${totalDry} agree dry`);
+    if (totalUnc > 0) distParts.push(`${totalUnc} split`);
+    if (totalWet > 0) distParts.push(`${totalWet} agree wet`);
     const distText = distParts.join(' \u00b7 ');
 
     let status, statusText, statusClass;
@@ -630,9 +630,9 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     let detailHTML = '';
     for (const mb of modelBreakdown) {
       const bits = [];
-      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry} dry</span>`);
-      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain} uncertain</span>`);
-      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet} wet</span>`);
+      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry} dry hr</span>`);
+      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain} mixed</span>`);
+      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet} wet hr</span>`);
       if (!bits.length) bits.push('<span class="mb-missing">no data</span>');
       detailHTML += `<div class="mb-row"><span class="mb-label" title="${mb.label}">${mb.short}</span> ${bits.join(' \u00b7 ')}</div>`;
     }
