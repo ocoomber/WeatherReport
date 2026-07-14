@@ -141,7 +141,7 @@ async function handleUseLocation() {
     const { latitude: lat, longitude: lon } = pos.coords;
     const pc = await reverseGeocode(lat, lon);
     if (!pc) { showError('Could not find a postcode for your location. Enter a postcode instead.'); return; }
-    input.value = pc;
+    input.value = pc.replace(/\s/g, '');
     form.requestSubmit();
   } catch (err) {
     if (err.code === 1) showError('Location access denied. Enable location services or enter a postcode.');
@@ -673,11 +673,9 @@ function initDatePicker() {
   selectDay.min = minStr;
   selectDay.max = maxStr;
   const saved = storage.get('weather_date');
-  if (!saved) {
-    const def = getNextSaturday();
-    def.setHours(0, 0, 0, 0);
-    selectDay.value = dateStr(def);
-  } else if (saved < minStr || saved > maxStr) {
+  if (saved && saved >= minStr && saved <= maxStr) {
+    selectDay.value = saved;
+  } else if (!saved || saved < minStr || saved > maxStr) {
     const def = getNextSaturday();
     def.setHours(0, 0, 0, 0);
     selectDay.value = dateStr(def);
@@ -792,8 +790,6 @@ async function handleSubmit(e) {
     lastRawData = forecastRes;
     storage.set('weather_postcode', input.value.trim().toUpperCase());
     if (!selectDay.min) initDatePicker();
-    const restoredDate = storage.get('weather_date');
-    if (restoredDate) selectDay.value = restoredDate;
     handleDateChange();
   } catch (err) {
     if (token !== requestToken) { hideLoading(); return; }
@@ -838,8 +834,6 @@ const savedStart = storage.get('weather_hour_start');
 const savedEnd = storage.get('weather_hour_end');
 if (savedStart) hourStart.value = savedStart;
 if (savedEnd) hourEnd.value = savedEnd;
-const savedDate = storage.get('weather_date');
-if (savedDate) selectDay.value = savedDate;
 const savedPostcode = storage.get('weather_postcode');
 if (savedPostcode) {
   input.value = savedPostcode;
