@@ -49,6 +49,8 @@ function fmt(val, unit, decimals) {
   return n.toFixed(decimals ?? (Number.isInteger(n) ? 0 : 1)) + (unit ? unit : '');
 }
 
+function _fmtTime(iso) { return iso.slice(11, 16); }
+
 function formatHour(h) {
   const h24 = Number(h);
   if (h24 === 0) return '12am';
@@ -57,7 +59,7 @@ function formatHour(h) {
   return (h24 - 12) + 'pm';
 }
 
-function normalisePostcode(pc) {
+function normalizePostcode(pc) {
   if (!pc || typeof pc !== 'string') return '';
   const s = pc.trim().toUpperCase().replace(/\s+/g, '');
   if (s.length < 5 || s.length > 7) return '';
@@ -102,7 +104,7 @@ function getNextSaturday() {
 /* ── API calls ── */
 
 async function geocode(postcode) {
-  const pc = normalisePostcode(postcode);
+  const pc = normalizePostcode(postcode);
   if (!pc) throw new Error('Enter a valid UK postcode (e.g. SW1A 1AA).');
   const url = `https://api.postcodes.io/postcodes/${pc}`;
   const res = await fetch(url);
@@ -125,6 +127,7 @@ async function reverseGeocode(lat, lon) {
 }
 
 async function handleUseLocation() {
+  if (locateBtn.disabled) return;
   if (!('geolocation' in navigator)) { showError('Geolocation is not available in this browser.'); return; }
   locateBtn.disabled = true;
   locateBtn.textContent = 'Locating…';
@@ -156,7 +159,7 @@ async function fetchForecast(lat, lon) {
     hourly: hourlyParams,
     daily: 'sunrise,sunset',
     models: modelIds,
-    forecast_days: '7',
+    forecast_days: 7,
     timezone: 'Europe/London',
   });
   const res = await fetch(url);
@@ -179,8 +182,7 @@ function getSunTimes(rawData, selectedDate) {
   const sunrise = rawData.daily[sunriseKey]?.[i];
   const sunset = rawData.daily[sunsetKey]?.[i];
   if (!sunrise || !sunset) return null;
-  const fmtTime = (iso) => iso.slice(11, 16);
-  return { sunrise: fmtTime(sunrise), sunset: fmtTime(sunset) };
+  return { sunrise: _fmtTime(sunrise), sunset: _fmtTime(sunset) };
 }
 
 /* ── Data parsing ── */
@@ -332,7 +334,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
     const section = document.createElement('section');
     section.className = 'metric-section';
 
-    const header = document.createElement('div');
+    const header = document.createElement('h3');
     header.className = 'metric-header';
     header.textContent = `${metric.label} (${metric.unit})`;
     section.appendChild(header);
@@ -416,7 +418,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
       rTd.className = 'range-col';
       const range = getModelRange(metric.key, row, visibleModels);
       if (range) {
-        const decimals = metric.key === 'precipitation' ? 1 : 0;
+        const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' ? 1 : 0;
         rTd.textContent = `${fmt(range.low, '', decimals)}\u2013${fmt(range.high, '', decimals)}`;
       } else {
         rTd.textContent = '\u2014';
@@ -447,11 +449,11 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         }
         agreeTr.appendChild(td);
       }
-      const emptyAgreeTd = document.createElement('td');
-      agreeTr.appendChild(emptyAgreeTd);
       const emptyRangeTd = document.createElement('td');
       emptyRangeTd.className = 'range-col';
       agreeTr.appendChild(emptyRangeTd);
+      const emptyAgreeTd = document.createElement('td');
+      agreeTr.appendChild(emptyAgreeTd);
       tbody.appendChild(agreeTr);
     }
 
@@ -546,15 +548,15 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     if (totalWet > 0) distParts.push(`${totalWet}/${totalRatings} wet`);
     const distText = distParts.join(' \u00b7 ');
 
-    let status, statusText, statusClass;
+    let statusText, statusClass;
     if (totalH === 0) {
-      status = 'nodata'; statusText = 'No data'; statusClass = 'period-nodata';
+      statusText = 'No data'; statusClass = 'period-nodata';
     } else if (dry >= wet && dry >= split) {
-      status = 'dry'; statusText = 'Dry'; statusClass = 'period-dry';
+      statusText = 'Dry'; statusClass = 'period-dry';
     } else if (wet >= dry && wet >= split) {
-      status = 'wet'; statusText = 'Rain likely'; statusClass = 'period-wet';
+      statusText = 'Rain likely'; statusClass = 'period-wet';
     } else {
-      status = 'split'; statusText = 'Mixed signals'; statusClass = 'period-split';
+      statusText = 'Mixed signals'; statusClass = 'period-split';
     }
 
     const modelBreakdown = visibleModels.map(mp => {
@@ -605,7 +607,10 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
       <div class="period-status">${statusText}</div>
       ${agreeHtml}
       <div class="period-detail">${detailHTML}</div>`;
+    block.tabIndex = 0;
+    block.setAttribute('role', 'button');
     block.addEventListener('click', function () { this.classList.toggle('period-expanded'); });
+    block.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('period-expanded'); } });
     container.appendChild(block);
   }
 }
@@ -691,6 +696,7 @@ function showError(msg) {
 function showResults(selectedDate, rows, modelsPresent, startH, endH) {
   forecastHeading.textContent = formatDateLong(selectedDate);
   const sunEl = document.getElementById('sun-info');
+  sunEl.classList.add('hidden');
   if (lastSunrise && lastSunset) {
     sunEl.innerHTML = `\u2600 Sunrise ${lastSunrise}<br>\u2601 Sunset ${lastSunset}`;
     sunEl.classList.remove('hidden');
@@ -734,9 +740,9 @@ function initHourRange() {
 /* ── Main handler ── */
 
 async function handleSubmit(e) {
-  e.preventDefault();
   const raw = input.value.trim();
-  if (!raw) return;
+  if (!raw) { e.preventDefault(); return; }
+  e.preventDefault();
 
   showLoading();
   resultsSection.classList.add('hidden');
@@ -801,11 +807,11 @@ if (savedDate) selectDay.value = savedDate;
 const savedPostcode = localStorage.getItem('weather_postcode');
 if (savedPostcode) {
   input.value = savedPostcode;
-  form.requestSubmit();
+  try { form.requestSubmit(); } catch {}
 }
 
 /* ── Service worker ── */
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
 }

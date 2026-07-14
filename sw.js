@@ -1,4 +1,4 @@
-const CACHE = 'weather-tool-v9';
+const CACHE = 'weather-tool-v10';
 
 const STATIC = [
   '/WeatherReport/',
@@ -11,7 +11,7 @@ const STATIC = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(STATIC).catch(() => {})).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(STATIC).then(() => self.skipWaiting()).catch(err => console.error('SW cache fill failed:', err)))
   );
 });
 
