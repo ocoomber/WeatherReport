@@ -717,6 +717,7 @@ function handleDateChange() {
   const sunTimes = getSunTimes(lastRawData, selected);
   lastSunrise = sunTimes?.sunrise ?? null;
   lastSunset = sunTimes?.sunset ?? null;
+  localStorage.setItem('weather_date', dateVal);
   showResults(selected, rows, modelsPresent, parseInt(hourStart.value, 10), parseInt(hourEnd.value, 10));
 }
 
@@ -805,6 +806,7 @@ async function handleSubmit(e) {
     if (token !== requestToken) return;
     lastRawData = forecastRes;
     lastEnsembleData = ensembleRes;
+    localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
     initDatePicker();
     handleDateChange();
   } catch (err) {
@@ -832,3 +834,13 @@ form.addEventListener('submit', handleSubmit);
 updateBtn.addEventListener('click', handleDateChange);
 hourStart.addEventListener('change', handleRangeChange);
 hourEnd.addEventListener('change', handleRangeChange);
+
+/* ── Restore saved state ── */
+
+const savedDate = localStorage.getItem('weather_date');
+if (savedDate) selectDay.value = savedDate;
+const savedPostcode = localStorage.getItem('weather_postcode');
+if (savedPostcode) {
+  input.value = savedPostcode;
+  form.requestSubmit();
+}
