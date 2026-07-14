@@ -17,6 +17,7 @@ const METRICS = [
   { key: 'cloud_cover', label: 'Cloud Cover', unit: '%' },
   { key: 'wind_speed_10m', label: 'Wind Speed (10m)', unit: 'km/h' },
   { key: 'wind_gusts_10m', label: 'Wind Gusts (10m)', unit: 'km/h' },
+  { key: 'temperature_2m', label: 'Temperature', unit: '°C' },
 ];
 
 const DEFAULT_START = 6;
@@ -275,6 +276,11 @@ function classifyCell(key, val) {
     if (val <= 70) return 'mid';
     return 'high';
   }
+  if (key === 'temperature_2m') {
+    if (val < 10) return 'low';
+    if (val <= 20) return 'mid';
+    return 'high';
+  }
   return null;
 }
 
@@ -381,7 +387,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         } else {
           const clazz = classifyCell(metric.key, val);
           if (clazz) td.className = 'cell-' + clazz;
-          const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' ? 1 : 0;
+          const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' || metric.key === 'temperature_2m' ? 1 : 0;
           td.textContent = fmt(val, '', decimals);
         }
         tr.appendChild(td);
@@ -467,13 +473,53 @@ function renderVerdictIcon(iconId) {
   return '';
 }
 
-function buildVerdictBanner(verdict) {
+function buildConsensusSummary(filtered, visibleModels) {
+  let tempSum = 0, tempCount = 0, cloudSum = 0, cloudCount = 0, windSum = 0, windCount = 0, precipSum = 0, precipCount = 0;
+  for (const row of filtered) {
+    for (const mp of visibleModels) {
+      const t = row.models[mp.id]?.temperature_2m;
+      if (t !== undefined && t !== null) { tempSum += Number(t); tempCount++; }
+      const c = row.models[mp.id]?.cloud_cover;
+      if (c !== undefined && c !== null) { cloudSum += Number(c); cloudCount++; }
+      const w = row.models[mp.id]?.wind_speed_10m;
+      if (w !== undefined && w !== null) { windSum += Number(w); windCount++; }
+      const p = row.models[mp.id]?.precipitation_probability;
+      if (p !== undefined && p !== null) { precipSum += Number(p); precipCount++; }
+    }
+  }
+  const parts = [];
+  if (tempCount > 0) {
+    const avg = Math.round(tempSum / tempCount);
+    parts.push(`${avg}°C`);
+  }
+  if (cloudCount > 0) {
+    const avg = cloudSum / cloudCount;
+    if (avg < 30) parts.push('clear');
+    else if (avg <= 70) parts.push('partly cloudy');
+    else parts.push('cloudy');
+  }
+  if (windCount > 0) {
+    const avg = windSum / windCount;
+    if (avg < 15) parts.push('light wind');
+    else if (avg <= 30) parts.push('moderate wind');
+    else parts.push('strong wind');
+  }
+  if (precipCount > 0) {
+    const avg = precipSum / precipCount;
+    if (avg >= 50) parts.push('rain likely');
+  }
+  return parts.join(' \u00b7 ');
+}
+
+function buildVerdictBanner(verdict, summary) {
   const banner = document.getElementById('verdict-banner');
   const iconEl = document.getElementById('verdict-icon');
   const textEl = document.getElementById('verdict-text');
+  const summaryEl = document.getElementById('verdict-summary');
   banner.className = 'verdict-banner ' + verdict.cssClass;
   iconEl.innerHTML = verdict.icon ? renderVerdictIcon(verdict.icon) : '';
   textEl.textContent = verdict.text;
+  summaryEl.textContent = summary || '';
   banner.classList.remove('hidden');
 }
 
@@ -700,7 +746,8 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
   const aggr = hourlyAgreement(filtered, visibleModels);
 
   const verdict = getVerdict(filtered, visibleModels, aggr);
-  buildVerdictBanner(verdict);
+  const summary = buildConsensusSummary(filtered, visibleModels);
+  buildVerdictBanner(verdict, summary);
 
   buildPeriodSummary(filtered, visibleModels, aggr);
   buildHourStrip(filtered, visibleModels, aggr);
