@@ -709,10 +709,10 @@ body {
 @media (max-width: 600px) {
   .brand-header { padding: 1rem 0.75rem 0.5rem; }
   .app-main { padding: 1rem 0.75rem; }
-  .search-form { max-width: 100%; }
-  .postcode-input { font-size: 0.9rem; }
-  .check-btn { font-size: 0.85rem; padding: 0.5rem 1rem; }
-  .locate-btn { font-size: 0.78rem; padding: 0.5rem 0.7rem; }
+  .search-form { max-width: 100%; flex-wrap: wrap; }
+  .postcode-input { flex: 1 1 100%; font-size: 0.9rem; }
+  .check-btn { flex: 1; font-size: 0.85rem; padding: 0.5rem 1rem; }
+  .locate-btn { flex: 1; font-size: 0.78rem; padding: 0.5rem 0.7rem; }
   .weather-table { font-size: 0.7rem; }
   .weather-table th,
   .weather-table td { padding: 0.3rem 0.35rem; }
