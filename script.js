@@ -358,7 +358,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
     }
     if (metric.key === 'precipitation_probability') {
       const agreeTh = document.createElement('th');
-      agreeTh.textContent = 'Agreement';
+      agreeTh.textContent = 'Agree';
       headRow.appendChild(agreeTh);
     }
     thead.appendChild(headRow);
