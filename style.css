@@ -353,7 +353,6 @@ body {
 
 .weather-table-wrap {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .weather-table {
@@ -447,7 +446,7 @@ body {
 }
 
 .agreement-row .model-agree-dry { color: var(--green); }
-.agreement-row .model-agree-wet { color: var(--red); }
+.agreement-row .model-agree-other { color: var(--amber-risk); }
 
 /* Color coding for all metric cells */
 
@@ -471,11 +470,6 @@ body {
 
 .cell-missing {
   color: var(--gray-300);
-}
-
-.cell-highlight {
-  outline: 2px solid var(--amber);
-  outline-offset: -2px;
 }
 
 /* Verdict banner */
@@ -563,6 +557,8 @@ body {
   color: var(--gray-500);
 }
 
+.period-block:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.period-block:focus:not(:focus-visible) { outline: none; }
 .period-block:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 .period-block:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 
@@ -627,7 +623,6 @@ body {
 
 .hour-strip-wrap {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
 }
 

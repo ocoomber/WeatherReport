@@ -22,6 +22,7 @@ const METRICS = [
 const DEFAULT_START = 6;
 const DEFAULT_END = 22;
 const AGREEMENT_THRESHOLD = 0.6;
+const MODEL_LOOKUP = new Map(MODELS.map(m => [m.id, m]));
 
 /* ── DOM refs ── */
 
@@ -238,7 +239,7 @@ function filterHours(rows, startH, endH) {
 function classifyPrecip(val) {
   if (val === null || val === undefined || isNaN(val)) return null;
   if (val < 20) return 'dry';
-  if (val <= 50) return 'uncertain';
+  if (val <= 50) return 'mixed';
   return 'wet';
 }
 
@@ -281,7 +282,7 @@ function hourlyAgreement(rows, modelsPresent) {
       const c = classifyPrecip(val);
       if (c === 'dry') dry++;
       else if (c === 'wet') wet++;
-      else if (c === 'uncertain') uncertain++;
+      else if (c === 'mixed') uncertain++;
     }
     const total = dry + wet + uncertain;
     return { dry, wet, uncertain, missing, total };
@@ -329,7 +330,6 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
   }
 
   const modelDayAgree = modelDayAgreement(filtered, visibleModels);
-
   for (const metric of METRICS) {
     const section = document.createElement('section');
     section.className = 'metric-section';
@@ -353,7 +353,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
     headRow.appendChild(timeTh);
     for (const mp of visibleModels) {
       const th = document.createElement('th');
-      const mDef = MODELS.find(m => m.id === mp.id);
+      const mDef = MODEL_LOOKUP.get(mp.id);
       th.textContent = mDef ? mDef.short : mp.id.slice(0, 4);
       th.title = mDef ? mDef.label : mp.id;
       th.className = 'model-label';
@@ -442,7 +442,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         const md = modelDayAgree.find(a => a.modelId === mp.id);
         if (md && md.total > 0) {
           td.textContent = `${md.dry}/${md.total}`;
-          td.className = md.dry / md.total >= AGREEMENT_THRESHOLD ? 'model-agree-dry' : 'model-agree-wet';
+          td.className = md.dry / md.total >= AGREEMENT_THRESHOLD ? 'model-agree-dry' : 'model-agree-other';
         } else {
           td.textContent = '\u2014';
           td.className = 'cell-missing';
@@ -480,15 +480,15 @@ function getVerdict(filtered, visibleModels, aggr) {
   if (total === 0) return { id: 'nodata', text: 'Insufficient data', cssClass: 'verdict-nodata' };
   const dryPct = dry / total;
   const wetPct = wet / total;
-  if (dryPct >= 0.65) return { id: 'outdoor', text: 'Outdoor looks good', cssClass: 'verdict-outdoor', icon: 'sun' };
-  if (wetPct >= 0.65) return { id: 'indoor', text: 'Indoor suggested', cssClass: 'verdict-indoor', icon: 'rain' };
+  if (dryPct >= AGREEMENT_THRESHOLD) return { id: 'outdoor', text: 'Outdoor looks good', cssClass: 'verdict-outdoor', icon: 'sun' };
+  if (wetPct >= AGREEMENT_THRESHOLD) return { id: 'indoor', text: 'Indoor suggested', cssClass: 'verdict-indoor', icon: 'rain' };
   return { id: 'uncertain', text: 'Too close to call \u2014 check again tomorrow', cssClass: 'verdict-uncertain', icon: 'cloud' };
 }
 
 function renderVerdictIcon(iconId) {
-  if (iconId === 'sun') return '<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M4.5 19.5l2-2M17.5 6.5l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  if (iconId === 'rain') return '<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M3 14c0-6 18-6 18 0" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.25"/><path d="M7 18l-1 3M12 18l-1 3M17 18l-1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-  if (iconId === 'cloud') return '<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M3 14c0-6 18-6 18 0" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.25"/><path d="M5 16c0-4 14-4 14 0" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.15"/><path d="M8 18h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  if (iconId === 'sun') return '<svg aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M4.5 19.5l2-2M17.5 6.5l2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  if (iconId === 'rain') return '<svg aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M3 14c0-6 18-6 18 0" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.25"/><path d="M7 18l-1 3M12 18l-1 3M17 18l-1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  if (iconId === 'cloud') return '<svg aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M3 14c0-6 18-6 18 0" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.25"/><path d="M5 16c0-4 14-4 14 0" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.15"/><path d="M8 18h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
   return '';
 }
 
@@ -566,11 +566,11 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
         if (val === undefined) continue;
         const c = classifyPrecip(val);
         if (c === 'dry') dryH++;
-        else if (c === 'uncertain') uncH++;
+        else if (c === 'mixed') uncH++;
         else if (c === 'wet') wetH++;
       }
-      const mDef = MODELS.find(m => m.id === mp.id);
-      return { modelId: mp.id, short: mDef ? mDef.short : mp.id.slice(0, 4), label: mDef ? mDef.label : mp.id, dry: dryH, uncertain: uncH, wet: wetH };
+    const mDef = MODEL_LOOKUP.get(mp.id);
+    return { modelId: mp.id, short: mDef ? mDef.short : mp.id.slice(0, 4), label: mDef ? mDef.label : mp.id, dry: dryH, uncertain: uncH, wet: wetH };
     });
 
     let detailHTML = '';
@@ -609,8 +609,9 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
       <div class="period-detail">${detailHTML}</div>`;
     block.tabIndex = 0;
     block.setAttribute('role', 'button');
-    block.addEventListener('click', function () { this.classList.toggle('period-expanded'); });
-    block.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('period-expanded'); } });
+    block.setAttribute('aria-expanded', 'false');
+    block.addEventListener('click', function () { this.classList.toggle('period-expanded'); this.setAttribute('aria-expanded', this.classList.contains('period-expanded')); });
+    block.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('period-expanded'); this.setAttribute('aria-expanded', this.classList.contains('period-expanded')); } });
     container.appendChild(block);
   }
 }
@@ -623,17 +624,22 @@ function buildHourStrip(filtered, visibleModels, aggr) {
   for (let i = 0; i < filtered.length; i++) {
     const block = document.createElement('div');
     block.className = 'hour-block';
+    block.tabIndex = 0;
+    block.setAttribute('role', 'img');
     const a = aggr[i];
     if (a.total === 0) {
       block.className += ' hour-nodata';
       block.innerHTML = `<div class="hour-block-label">${formatHour(filtered[i].hour)}</div><div class="hour-block-val">\u2014</div>`;
+      block.setAttribute('aria-label', `${formatHour(filtered[i].hour)}: no data`);
     } else {
       const dryPct = a.dry / a.total;
       const wetPct = a.wet / a.total;
-      if (dryPct >= AGREEMENT_THRESHOLD) block.className += ' hour-dry';
-      else if (wetPct >= AGREEMENT_THRESHOLD) block.className += ' hour-wet';
-      else block.className += ' hour-split';
+      let label;
+      if (dryPct >= AGREEMENT_THRESHOLD) { block.className += ' hour-dry'; label = 'dry'; }
+      else if (wetPct >= AGREEMENT_THRESHOLD) { block.className += ' hour-wet'; label = 'wet'; }
+      else { block.className += ' hour-split'; label = 'mixed'; }
       block.innerHTML = `<div class="hour-block-label">${formatHour(filtered[i].hour)}</div><div class="hour-block-val">${a.dry}/${a.total}</div>`;
+      block.setAttribute('aria-label', `${formatHour(filtered[i].hour)}: ${a.dry}/${a.total} models agree ${label}`);
     }
     strip.appendChild(block);
   }
@@ -648,7 +654,12 @@ function initDatePicker() {
   const maxStr = dateStr(addDays(today, 6));
   selectDay.min = minStr;
   selectDay.max = maxStr;
-  if (!localStorage.getItem('weather_date')) {
+  const saved = localStorage.getItem('weather_date');
+  if (!saved) {
+    const def = getNextSaturday();
+    def.setHours(0, 0, 0, 0);
+    selectDay.value = dateStr(def);
+  } else if (saved < minStr || saved > maxStr) {
     const def = getNextSaturday();
     def.setHours(0, 0, 0, 0);
     selectDay.value = dateStr(def);
@@ -698,7 +709,7 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
   const sunEl = document.getElementById('sun-info');
   sunEl.classList.add('hidden');
   if (lastSunrise && lastSunset) {
-    sunEl.innerHTML = `\u2600 Sunrise ${lastSunrise}<br>\u2601 Sunset ${lastSunset}`;
+    sunEl.innerHTML = `<span class="visually-hidden">Sunrise </span>\u2600 ${lastSunrise}<br><span class="visually-hidden">Sunset </span>\u2601 ${lastSunset}`;
     sunEl.classList.remove('hidden');
   } else {
     sunEl.classList.add('hidden');
@@ -717,6 +728,8 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
 
   resultsSection.classList.remove('hidden');
   errorEl.classList.add('hidden');
+  forecastHeading.tabIndex = -1;
+  forecastHeading.focus();
 }
 
 /* ── Hour range init ── */
@@ -755,7 +768,7 @@ async function handleSubmit(e) {
     if (token !== requestToken) { hideLoading(); return; }
     lastRawData = forecastRes;
     localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
-    initDatePicker();
+    if (!selectDay.min) initDatePicker();
     const restoredDate = localStorage.getItem('weather_date');
     if (restoredDate) selectDay.value = restoredDate;
     handleDateChange();
