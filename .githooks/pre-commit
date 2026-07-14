@@ -1,0 +1,8 @@
+#!/usr/bin/env powershell
+# Auto-bump build number and SW cache version on every commit
+
+$repo = Split-Path -Parent $PSScriptRoot
+& "$repo\bump.ps1"
+
+# Stage the bumped files so they're included in the commit
+git add "$repo/index.html" "$repo/sw.js"
