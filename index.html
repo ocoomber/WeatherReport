@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Decision Tool — Strange Goose Productions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="brand-header">
+    <div class="brand-mark">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12S22.627 4 16 4z" fill="#D4A24E" opacity="0.3"/>
+        <path d="M16 8c-4.418 0-8 3.582-8 8s3.582 8 8 8 8-3.582 8-8-3.582-8-8-8z" fill="#E07B39" opacity="0.6"/>
+        <path d="M16 12c-2.209 0-4 1.791-4 4s1.791 4 4 4 4-1.791 4-4-1.791-4-4-4z" fill="#E07B39"/>
+      </svg>
+      <span class="brand-name">Strange Goose Productions</span>
+      <span class="build-number">b006</span>
+    </div>
+    <p class="brand-subtitle">Weather Decision Tool</p>
+  </header>
+
+  <main class="app-main">
+    <section class="input-section">
+      <form id="search-form" class="search-form">
+        <label for="postcode-input" class="visually-hidden">Enter UK postcode</label>
+        <input
+          type="text"
+          id="postcode-input"
+          class="postcode-input"
+          placeholder="e.g. SW1A 1AA"
+          autocomplete="postal-code"
+          spellcheck="false"
+        >
+        <button type="submit" id="check-btn" class="check-btn">Check weather</button>
+      </form>
+      <p id="input-hint" class="input-hint">Enter a UK postcode to see next Saturday's multi-model forecast</p>
+    </section>
+
+    <section id="status-area" class="status-area" aria-live="polite">
+      <div id="loading-indicator" class="loading-indicator hidden">
+        <div class="spinner"></div>
+        <span>Fetching forecast…</span>
+      </div>
+      <div id="error-display" class="error-display hidden" role="alert"></div>
+    </section>
+
+    <section id="results-section" class="results-section hidden">
+      <div class="results-header">
+        <h2 id="forecast-heading" class="forecast-heading"></h2>
+        <p id="sun-info" class="sun-info hidden"></p>
+      </div>
+
+      <div id="verdict-banner" class="verdict-banner hidden">
+        <span id="verdict-icon" class="verdict-icon"></span>
+        <span id="verdict-text" class="verdict-text"></span>
+      </div>
+
+      <p id="summary-line" class="summary-line hidden"></p>
+
+      <div class="controls-row">
+        <div class="date-control">
+          <label for="forecast-date">Forecast date:</label>
+          <input type="date" id="forecast-date" class="date-picker">
+          <button type="button" id="update-btn" class="update-btn">Update</button>
+        </div>
+        <div class="hour-range-control">
+          <label for="hour-start">Hours:</label>
+          <select id="hour-start" class="hour-select"></select>
+          <span class="hour-sep">to</span>
+          <select id="hour-end" class="hour-select"></select>
+        </div>
+      </div>
+
+      <div id="period-summary" class="period-summary"></div>
+
+      <div id="hour-strip-wrap" class="hour-strip-wrap">
+        <div id="hour-strip" class="hour-strip"></div>
+      </div>
+
+      <details id="full-data-accordion" class="full-data-accordion">
+        <summary id="accordion-summary">Show full model data</summary>
+        <div id="tables-container" class="tables-container"></div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+    Geocoding: <a href="https://postcodes.io/" target="_blank" rel="noopener">postcodes.io</a></p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
