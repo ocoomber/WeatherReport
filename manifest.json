@@ -1,0 +1,19 @@
+{
+  "name": "Weather Decision Tool",
+  "short_name": "Weather Tool",
+  "description": "Multi-model weather comparison for film production crews",
+  "start_url": "/WeatherReport/",
+  "scope": "/WeatherReport/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#D4A24E",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/WeatherReport/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
