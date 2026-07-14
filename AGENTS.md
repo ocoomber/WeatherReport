@@ -15,9 +15,7 @@ Deploy as-is to any static host. Currently on GitHub Pages.
 
 ## Every code change MUST bump the build number
 
-Edit `index.html`: look for `bXXX` on the `.build-number` span and increment it. This lets the user verify they're seeing an updated page, not a cached one.
-
-Also bump the cache version in `sw.js` (e.g. `weather-tool-v3` → `weather-tool-v4`) so the service worker re-fetches changed assets.
+Run `.\bump.ps1` to increment the build number in `index.html` and the cache version in `sw.js`. This lets the user verify they're seeing an updated page, not a cached one.
 
 ## Data sources
 
