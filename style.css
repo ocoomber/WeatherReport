@@ -523,6 +523,8 @@ body {
   background: white;
   overflow: hidden;
   box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
 }
 
 .period-bar {
@@ -561,7 +563,7 @@ body {
   color: var(--gray-500);
 }
 
-.period-block { cursor: pointer; transition: box-shadow 0.15s; }
+.period-block:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 .period-block:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 
 .period-ensemble {
