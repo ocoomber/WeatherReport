@@ -1,4 +1,4 @@
-const CACHE = 'weather-tool-v21';
+const CACHE = 'weather-tool-b035';
 
 const STATIC = [
   '/WeatherReport/',
