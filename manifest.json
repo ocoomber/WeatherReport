@@ -1,7 +1,7 @@
 {
-  "name": "Weather Decision Tool",
-  "short_name": "Weather Tool",
-  "description": "Multi-model weather comparison for film production crews",
+  "name": "SGP Weather Tool",
+  "short_name": "SGP Weather",
+  "description": "SGP multi-model weather comparison for film production crews",
   "start_url": "/WeatherReport/",
   "scope": "/WeatherReport/",
   "display": "standalone",
