@@ -95,6 +95,11 @@ function addDays(d, n) {
   return r;
 }
 
+const storage = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+};
+
 function getNextSaturday() {
   const now = new Date();
   const day = now.getDay();
@@ -396,6 +401,19 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         tr.appendChild(td);
       }
 
+      /* Range column */
+      const rTd = document.createElement('td');
+      rTd.className = 'range-col';
+      const range = getModelRange(metric.key, row, visibleModels);
+      if (range) {
+        const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' ? 1 : 0;
+        rTd.textContent = `${fmt(range.low, '', decimals)}\u2013${fmt(range.high, '', decimals)}`;
+      } else {
+        rTd.textContent = '\u2014';
+        rTd.className += ' cell-missing';
+      }
+      tr.appendChild(rTd);
+
       /* Agreement column (precip probability only) */
       if (metric.key === 'precipitation_probability') {
         const aTd = document.createElement('td');
@@ -412,19 +430,6 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         }
         tr.appendChild(aTd);
       }
-
-      /* Range column */
-      const rTd = document.createElement('td');
-      rTd.className = 'range-col';
-      const range = getModelRange(metric.key, row, visibleModels);
-      if (range) {
-        const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' ? 1 : 0;
-        rTd.textContent = `${fmt(range.low, '', decimals)}\u2013${fmt(range.high, '', decimals)}`;
-      } else {
-        rTd.textContent = '\u2014';
-        rTd.className += ' cell-missing';
-      }
-      tr.appendChild(rTd);
 
       tbody.appendChild(tr);
     }
@@ -576,9 +581,10 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     let detailHTML = '';
     for (const mb of modelBreakdown) {
       const bits = [];
-      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry}/${pRows.length} dry</span>`);
-      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain}/${pRows.length} mixed</span>`);
-      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet}/${pRows.length} wet</span>`);
+      const mbTotal = mb.dry + mb.uncertain + mb.wet;
+      if (mb.dry > 0) bits.push(`<span class="mb-dry">${mb.dry}/${mbTotal} dry</span>`);
+      if (mb.uncertain > 0) bits.push(`<span class="mb-unc">${mb.uncertain}/${mbTotal} mixed</span>`);
+      if (mb.wet > 0) bits.push(`<span class="mb-wet">${mb.wet}/${mbTotal} wet</span>`);
       if (!bits.length) bits.push('<span class="mb-missing">no data</span>');
       detailHTML += `<div class="mb-row"><span class="mb-label" title="${mb.label}">${mb.short}</span> ${bits.join(' \u00b7 ')}</div>`;
     }
@@ -654,7 +660,7 @@ function initDatePicker() {
   const maxStr = dateStr(addDays(today, 6));
   selectDay.min = minStr;
   selectDay.max = maxStr;
-  const saved = localStorage.getItem('weather_date');
+  const saved = storage.get('weather_date');
   if (!saved) {
     const def = getNextSaturday();
     def.setHours(0, 0, 0, 0);
@@ -671,17 +677,21 @@ function handleDateChange() {
   const dateVal = selectDay.value;
   if (!dateVal) return;
   tablesContainer.innerHTML = '<p class="no-data">Updating\u2026</p>';
-  const parts = dateVal.split('-').map(Number);
-  const selected = new Date(parts[0], parts[1] - 1, parts[2]);
-  lastSelectedDate = selected;
-  const { rows, modelsPresent } = parseHourly(lastRawData, MODELS, selected);
-  lastRows = rows;
-  lastModels = modelsPresent;
-  const sunTimes = getSunTimes(lastRawData, selected);
-  lastSunrise = sunTimes?.sunrise ?? null;
-  lastSunset = sunTimes?.sunset ?? null;
-  localStorage.setItem('weather_date', dateVal);
-  showResults(selected, rows, modelsPresent, parseInt(hourStart.value, 10), parseInt(hourEnd.value, 10));
+  try {
+    const parts = dateVal.split('-').map(Number);
+    const selected = new Date(parts[0], parts[1] - 1, parts[2]);
+    lastSelectedDate = selected;
+    const { rows, modelsPresent } = parseHourly(lastRawData, MODELS, selected);
+    lastRows = rows;
+    lastModels = modelsPresent;
+    const sunTimes = getSunTimes(lastRawData, selected);
+    lastSunrise = sunTimes?.sunrise ?? null;
+    lastSunset = sunTimes?.sunset ?? null;
+    storage.set('weather_date', dateVal);
+    showResults(selected, rows, modelsPresent, parseInt(hourStart.value, 10), parseInt(hourEnd.value, 10));
+  } catch {
+    showError('Could not update forecast for this date.');
+  }
 }
 
 /* ── UI state ── */
@@ -767,9 +777,9 @@ async function handleSubmit(e) {
     const forecastRes = await fetchForecast(lat, lon);
     if (token !== requestToken) { hideLoading(); return; }
     lastRawData = forecastRes;
-    localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
+    storage.set('weather_postcode', input.value.trim().toUpperCase());
     if (!selectDay.min) initDatePicker();
-    const restoredDate = localStorage.getItem('weather_date');
+    const restoredDate = storage.get('weather_date');
     if (restoredDate) selectDay.value = restoredDate;
     handleDateChange();
   } catch (err) {
@@ -793,8 +803,8 @@ function handleRangeChange() {
   let startH = parseInt(hourStart.value, 10);
   let endH = parseInt(hourEnd.value, 10);
   if (endH < startH) { endH = startH; hourEnd.value = startH; showRangeHint(); }
-  localStorage.setItem('weather_hour_start', startH);
-  localStorage.setItem('weather_hour_end', endH);
+  storage.set('weather_hour_start', startH);
+  storage.set('weather_hour_end', endH);
   showResults(lastSelectedDate, lastRows, lastModels, startH, endH);
 }
 
@@ -811,13 +821,13 @@ hourEnd.addEventListener('change', handleRangeChange);
 
 /* ── Restore saved state ── */
 
-const savedStart = localStorage.getItem('weather_hour_start');
-const savedEnd = localStorage.getItem('weather_hour_end');
+const savedStart = storage.get('weather_hour_start');
+const savedEnd = storage.get('weather_hour_end');
 if (savedStart) hourStart.value = savedStart;
 if (savedEnd) hourEnd.value = savedEnd;
-const savedDate = localStorage.getItem('weather_date');
+const savedDate = storage.get('weather_date');
 if (savedDate) selectDay.value = savedDate;
-const savedPostcode = localStorage.getItem('weather_postcode');
+const savedPostcode = storage.get('weather_postcode');
 if (savedPostcode) {
   input.value = savedPostcode;
   try { form.requestSubmit(); } catch {}

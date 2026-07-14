@@ -147,6 +147,8 @@ body {
   white-space: nowrap;
 }
 
+.check-btn:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.check-btn:focus:not(:focus-visible) { outline: none; }
 .check-btn:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 .check-btn:hover { background: #C96E2F; }
 .check-btn:active { background: #B35E24; }
@@ -169,6 +171,8 @@ body {
   transition: all 0.15s;
   white-space: nowrap;
 }
+.locate-btn:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.locate-btn:focus:not(:focus-visible) { outline: none; }
 .locate-btn:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 .locate-btn:hover { border-color: var(--amber-deep); color: var(--amber-deep); }
 .locate-btn:active { background: #f9f1e6; }
@@ -284,6 +288,8 @@ body {
   line-height: 1.4;
 }
 
+.update-btn:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.update-btn:focus:not(:focus-visible) { outline: none; }
 .update-btn:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 .update-btn:hover { background: #C96E2F; }
 .update-btn:active { background: #B35E24; }
@@ -645,6 +651,9 @@ body {
 .hour-wet { background: var(--red-bg); color: #B71C1C; }
 .hour-split { background: var(--amber-risk-bg); color: #BF360C; }
 .hour-nodata { background: var(--gray-100); color: var(--gray-300); }
+.hour-block:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.hour-block:focus:not(:focus-visible) { outline: none; }
+.hour-block:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
 
 .hour-block-label {
   font-size: 0.6rem;

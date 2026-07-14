@@ -28,7 +28,7 @@
         <path d="M16 12c-2.209 0-4 1.791-4 4s1.791 4 4 4 4-1.791 4-4-1.791-4-4-4z" fill="#E07B39"/>
       </svg>
       <h1 class="brand-name">Strange Goose Productions</h1>
-      <span class="build-number">b023</span>
+      <span class="build-number">b024</span>
     </div>
     <p class="brand-subtitle">SGP Weather Tool</p>
   </header>
@@ -44,6 +44,7 @@
           placeholder="e.g. SW1A 1AA"
           autocomplete="postal-code"
           spellcheck="false"
+          aria-describedby="input-hint"
           required
           pattern="[A-Za-z][A-Za-z0-9]{4,6}"
           maxlength="7"
@@ -83,7 +84,7 @@
           <label for="hour-start">Hours:</label>
           <select id="hour-start" class="hour-select"></select>
           <span class="hour-sep">to</span>
-          <select id="hour-end" class="hour-select"></select>
+          <select id="hour-end" class="hour-select" aria-label="End hour"></select>
           <span id="range-hint" class="range-hint hidden"></span>
         </div>
       </div>
