@@ -775,6 +775,7 @@ function handleRangeChange() {
 
 initHourRange();
 initDatePicker();
+input.addEventListener('input', function () { this.value = this.value.replace(/\s/g, ''); });
 form.addEventListener('submit', handleSubmit);
 updateBtn.addEventListener('click', handleDateChange);
 locateBtn.addEventListener('click', handleUseLocation);
