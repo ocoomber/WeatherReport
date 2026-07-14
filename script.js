@@ -301,10 +301,11 @@ function generateSummary(rows, modelsPresent) {
   if (numModels === 0) return 'No model data returned for the selected hours.';
 
   const aggr = hourlyAgreement(rows, visibleModels);
+  if (!aggr.length) return 'No data for the selected hours.';
 
   const dryHours = aggr.filter(a => a.total > 0 && a.dry >= a.total * 0.6);
   const wetHours = aggr.filter(a => a.total > 0 && a.wet >= a.total * 0.6);
-  const splitHours = aggr.filter(a => a.total === 0 || (a.dry < a.total * 0.6 && a.wet < a.total * 0.6));
+  const splitHours = aggr.filter(a => a.total > 0 && a.dry < a.total * 0.6 && a.wet < a.total * 0.6);
 
   if (dryHours.length === rows.length) {
     return `All ${numModels} models agree: dry conditions throughout the day. High confidence.`;
@@ -653,7 +654,7 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     let agreeHtml = `<div class="period-agree">${distText}</div>`;
     if (ensAvg !== null) {
       const barW = Math.round(ensAvg);
-      agreeHtml += `<div class="period-ensemble"><span class="ensemble-bar-wrap"><span class="ensemble-bar" style="width:${barW}%"></span></span> <span class="ensemble-label">${barW}% average rain risk (6 models)</span></div>`;
+      agreeHtml += `<div class="period-ensemble"><span class="ensemble-bar-wrap"><span class="ensemble-bar" style="width:${barW}%"></span></span> <span class="ensemble-label">${barW}% average rain risk (${visibleModels.length} models)</span></div>`;
     }
     block.innerHTML = `<div class="period-bar"></div>
       <div class="period-label">${p.label}</div>
@@ -801,9 +802,9 @@ async function handleSubmit(e) {
 
   try {
     const { lat, lon } = await geocode(raw);
-    if (token !== requestToken) return;
+    if (token !== requestToken) { hideLoading(); return; }
     const [forecastRes, ensembleRes] = await Promise.all([fetchForecast(lat, lon), fetchEnsemble(lat, lon)]);
-    if (token !== requestToken) return;
+    if (token !== requestToken) { hideLoading(); return; }
     lastRawData = forecastRes;
     lastEnsembleData = ensembleRes;
     localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
