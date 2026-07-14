@@ -324,6 +324,8 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
 
   const modelDayAgree = modelDayAgreement(filtered, visibleModels);
   for (const metric of METRICS) {
+    const metricModels = visibleModels.filter(mp => filtered.some(r => r.models[mp.id]?.[metric.key] !== undefined));
+    if (!metricModels.length) continue;
     const section = document.createElement('section');
     section.className = 'metric-section';
 
@@ -344,7 +346,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
     const timeTh = document.createElement('th');
     timeTh.textContent = 'Time';
     headRow.appendChild(timeTh);
-    for (const mp of visibleModels) {
+    for (const mp of metricModels) {
       const th = document.createElement('th');
       const mDef = MODEL_LOOKUP.get(mp.id);
       th.textContent = mDef ? mDef.short : mp.id.slice(0, 4);
@@ -370,7 +372,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
       timeTd.textContent = formatHour(row.hour);
       tr.appendChild(timeTd);
 
-      for (const mp of visibleModels) {
+      for (const mp of metricModels) {
         const td = document.createElement('td');
         const val = row.models[mp.id]?.[metric.key];
         if (val === undefined) {
@@ -413,7 +415,7 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
       labelTd.textContent = 'Dry hours';
       agreeTr.appendChild(labelTd);
 
-      for (const mp of visibleModels) {
+      for (const mp of metricModels) {
         const td = document.createElement('td');
         const md = modelDayAgree.find(a => a.modelId === mp.id);
         if (md && md.total > 0) {
