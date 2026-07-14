@@ -28,7 +28,7 @@
         <path d="M16 12c-2.209 0-4 1.791-4 4s1.791 4 4 4 4-1.791 4-4-1.791-4-4-4z" fill="#E07B39"/>
       </svg>
       <h1 class="brand-name">Strange Goose Productions</h1>
-      <span class="build-number">b020</span>
+      <span class="build-number">b021</span>
     </div>
     <p class="brand-subtitle">SGP Weather Tool</p>
   </header>
@@ -45,7 +45,7 @@
           autocomplete="postal-code"
           spellcheck="false"
           required
-          pattern="[A-Za-z0-9]{5,7}"
+          pattern="[A-Za-z][A-Za-z0-9]{4,6}"
           maxlength="7"
         >
         <button type="submit" id="check-btn" class="check-btn">Check weather</button>
@@ -84,6 +84,7 @@
           <select id="hour-start" class="hour-select"></select>
           <span class="hour-sep">to</span>
           <select id="hour-end" class="hour-select"></select>
+          <span id="range-hint" class="range-hint hidden"></span>
         </div>
       </div>
 

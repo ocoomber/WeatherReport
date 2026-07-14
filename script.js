@@ -36,6 +36,7 @@ const forecastHeading = document.getElementById('forecast-heading');
 const tablesContainer = document.getElementById('tables-container');
 const hourStart = document.getElementById('hour-start');
 const hourEnd = document.getElementById('hour-end');
+const rangeHint = document.getElementById('range-hint');
 const selectDay = document.getElementById('forecast-date');
 const updateBtn = document.getElementById('update-btn');
 
@@ -169,21 +170,17 @@ async function fetchForecast(lat, lon) {
 function getSunTimes(rawData, selectedDate) {
   if (!rawData || !rawData.daily) return null;
   const target = dateStr(selectedDate);
-  for (let i = 0; i < rawData.daily.time.length; i++) {
-    if (rawData.daily.time[i] !== target) continue;
-    const keys = Object.keys(rawData.daily);
-    const sunriseKey = keys.find(k => k.startsWith('sunrise_'));
-    const sunsetKey = keys.find(k => k.startsWith('sunset_'));
-    if (!sunriseKey || !sunsetKey) return null;
-    const sunrise = rawData.daily[sunriseKey]?.[i];
-    const sunset = rawData.daily[sunsetKey]?.[i];
-    if (sunrise && sunset) {
-      const fmtTime = (iso) => iso.slice(11, 16);
-      return { sunrise: fmtTime(sunrise), sunset: fmtTime(sunset) };
-    }
-    return null;
-  }
-  return null;
+  const i = rawData.daily.time.findIndex(t => t === target);
+  if (i === -1) return null;
+  const keys = Object.keys(rawData.daily);
+  const sunriseKey = keys.find(k => k.startsWith('sunrise_'));
+  const sunsetKey = keys.find(k => k.startsWith('sunset_'));
+  if (!sunriseKey || !sunsetKey) return null;
+  const sunrise = rawData.daily[sunriseKey]?.[i];
+  const sunset = rawData.daily[sunsetKey]?.[i];
+  if (!sunrise || !sunset) return null;
+  const fmtTime = (iso) => iso.slice(11, 16);
+  return { sunrise: fmtTime(sunrise), sunset: fmtTime(sunset) };
 }
 
 /* ── Data parsing ── */
@@ -510,9 +507,9 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
   container.innerHTML = '';
 
   const periods = [
-    { label: 'Morning (6-11)', start: 6, end: 11 },
-    { label: 'Afternoon (12-17)', start: 12, end: 17 },
-    { label: 'Evening (18-22)', start: 18, end: 22 },
+    { name: 'Morning', start: 6, end: 11 },
+    { name: 'Afternoon', start: 12, end: 17 },
+    { name: 'Evening', start: 18, end: 22 },
   ];
 
   for (const p of periods) {
@@ -525,6 +522,8 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
       }
     }
     if (!pIndices.length) continue;
+    const rangeLabel = pRows.length > 1 ? `${pRows[0].hour}\u2013${pRows[pRows.length - 1].hour}` : `${pRows[0].hour}`;
+    p.label = `${p.name} (${rangeLabel})`;
 
     let dry = 0, wet = 0, split = 0, totalH = 0;
     let totalDry = 0, totalUnc = 0, totalWet = 0;
@@ -599,7 +598,7 @@ function buildPeriodSummary(filtered, visibleModels, aggr) {
     let agreeHtml = `<div class="period-agree">${distText}</div>`;
     if (ensAvg !== null) {
       const barW = Math.round(ensAvg);
-      agreeHtml += `<div class="period-ensemble"><span class="ensemble-bar-wrap"><span class="ensemble-bar" style="width:${barW}%"></span></span> <span class="ensemble-label">${barW}% average rain risk (${visibleModels.length} models)</span></div>`;
+      agreeHtml += `<div class="period-ensemble"><span class="ensemble-bar-wrap"><span class="ensemble-bar" style="width:${barW}%"></span></span> <span class="ensemble-label">${barW}% average precipitation probability (${visibleModels.length} models)</span></div>`;
     }
     block.innerHTML = `<div class="period-bar"></div>
       <div class="period-label">${p.label}</div>
@@ -644,9 +643,11 @@ function initDatePicker() {
   const maxStr = dateStr(addDays(today, 6));
   selectDay.min = minStr;
   selectDay.max = maxStr;
-  const def = getNextSaturday();
-  def.setHours(0, 0, 0, 0);
-  selectDay.value = dateStr(def);
+  if (!localStorage.getItem('weather_date')) {
+    const def = getNextSaturday();
+    def.setHours(0, 0, 0, 0);
+    selectDay.value = dateStr(def);
+  }
 }
 
 function handleDateChange() {
@@ -761,11 +762,18 @@ async function handleSubmit(e) {
   hideLoading();
 }
 
+function showRangeHint() {
+  rangeHint.textContent = 'End set to match start';
+  rangeHint.classList.remove('hidden');
+  clearTimeout(rangeHint._timer);
+  rangeHint._timer = setTimeout(() => rangeHint.classList.add('hidden'), 2500);
+}
+
 function handleRangeChange() {
   if (!lastRows || !lastModels) return;
   let startH = parseInt(hourStart.value, 10);
   let endH = parseInt(hourEnd.value, 10);
-  if (endH < startH) { endH = startH; hourEnd.value = startH; }
+  if (endH < startH) { endH = startH; hourEnd.value = startH; showRangeHint(); }
   localStorage.setItem('weather_hour_start', startH);
   localStorage.setItem('weather_hour_end', endH);
   showResults(lastSelectedDate, lastRows, lastModels, startH, endH);
