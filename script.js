@@ -307,13 +307,6 @@ function generateSummary(rows, modelsPresent) {
   const wetHours = aggr.filter(a => a.total > 0 && a.wet >= a.total * 0.6);
   const splitHours = aggr.filter(a => a.total > 0 && a.dry < a.total * 0.6 && a.wet < a.total * 0.6);
 
-  if (dryHours.length === rows.length) {
-    return `All ${numModels} models agree: dry conditions throughout the day. High confidence.`;
-  }
-  if (wetHours.length === rows.length) {
-    return `All ${numModels} models agree: rain expected throughout the day. High confidence.`;
-  }
-
   if (splitHours.length > rows.length * 0.5) {
     return `Low confidence — models disagree on rain risk for most of the day. Check again closer to the date.`;
   }
