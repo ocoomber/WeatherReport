@@ -398,10 +398,8 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
           aTd.textContent = '\u2014';
         } else {
           const pct = Math.round((a.dry / a.total) * 100);
-          if (pct >= 80) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' high'; }
-          else if (pct >= Math.round(AGREEMENT_THRESHOLD * 100)) { aTd.textContent = `${a.dry}/${a.total} agree dry`; aTd.className += ' medium'; }
-          else if (a.wet >= a.total * AGREEMENT_THRESHOLD) { aTd.textContent = `${a.wet}/${a.total} agree wet`; aTd.className += ' low'; }
-          else { aTd.textContent = `Split`; aTd.className += ' medium'; }
+          if (a.wet >= a.total * AGREEMENT_THRESHOLD) { aTd.textContent = `${a.wet}/${a.total}`; aTd.className += ' low'; }
+          else { aTd.textContent = `${a.dry}/${a.total}`; aTd.className += pct >= 80 ? ' high' : ' medium'; }
         }
         tr.appendChild(aTd);
       }
