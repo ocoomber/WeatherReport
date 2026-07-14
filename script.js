@@ -853,3 +853,9 @@ if (savedPostcode) {
   input.value = savedPostcode;
   form.requestSubmit();
 }
+
+/* ── Service worker ── */
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
