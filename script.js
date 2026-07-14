@@ -307,18 +307,6 @@ function modelDayAgreement(rows, modelsPresent) {
   });
 }
 
-/* ── Summary generation ── */
-
-function getModelRange(metricKey, row, visibleModels) {
-  const values = [];
-  for (const mp of visibleModels) {
-    const val = row.models[mp.id]?.[metricKey];
-    if (val !== undefined && val !== null) values.push(Number(val));
-  }
-  if (values.length < 2) return null;
-  return { low: Math.min(...values), high: Math.max(...values) };
-}
-
 /* ── Table builder ── */
 
 function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
@@ -364,10 +352,6 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
       th.className = 'model-label';
       headRow.appendChild(th);
     }
-    const rangeTh = document.createElement('th');
-    rangeTh.textContent = 'Range';
-    rangeTh.className = 'range-col';
-    headRow.appendChild(rangeTh);
     if (metric.key === 'precipitation_probability') {
       const agreeTh = document.createElement('th');
       agreeTh.textContent = 'Agreement';
@@ -400,19 +384,6 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         }
         tr.appendChild(td);
       }
-
-      /* Range column */
-      const rTd = document.createElement('td');
-      rTd.className = 'range-col';
-      const range = getModelRange(metric.key, row, visibleModels);
-      if (range) {
-        const decimals = metric.key === 'precipitation' || metric.key === 'wind_speed_10m' || metric.key === 'wind_gusts_10m' ? 1 : 0;
-        rTd.textContent = `${fmt(range.low, '', decimals)}\u2013${fmt(range.high, '', decimals)}`;
-      } else {
-        rTd.textContent = '\u2014';
-        rTd.className += ' cell-missing';
-      }
-      tr.appendChild(rTd);
 
       /* Agreement column (precip probability only) */
       if (metric.key === 'precipitation_probability') {
@@ -454,9 +425,6 @@ function buildTables(rows, modelsPresent, startH, endH, filtered, agreement) {
         }
         agreeTr.appendChild(td);
       }
-      const emptyRangeTd = document.createElement('td');
-      emptyRangeTd.className = 'range-col';
-      agreeTr.appendChild(emptyRangeTd);
       const emptyAgreeTd = document.createElement('td');
       agreeTr.appendChild(emptyAgreeTd);
       tbody.appendChild(agreeTr);

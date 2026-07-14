@@ -428,14 +428,6 @@ body {
 .agreement-col.medium { color: var(--amber-risk); }
 .agreement-col.low { color: var(--red); }
 
-.range-col {
-  font-size: 0.7rem;
-  color: var(--gray-500);
-  max-width: 80px;
-  white-space: nowrap;
-  border-left: 1px solid var(--gray-100);
-}
-
 /* Agreement row at bottom */
 
 .agreement-row td {
