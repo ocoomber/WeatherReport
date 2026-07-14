@@ -1,4 +1,4 @@
-const CACHE = 'weather-tool-v4';
+const CACHE = 'weather-tool-v7';
 
 const STATIC = [
   '/WeatherReport/',
@@ -11,7 +11,7 @@ const STATIC = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(STATIC).catch(() => {})).then(() => self.skipWaiting())
   );
 });
 
@@ -29,10 +29,17 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* static assets — cache-first */
+  /* static assets — stale-while-revalidate */
   if (STATIC.includes(url.pathname)) {
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => { const r = res.clone(); caches.open(CACHE).then(c => c.put(e.request, r)); return res; }))
+      caches.match(e.request).then(cached => {
+        const fetchPromise = fetch(e.request).then(res => {
+          const r = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, r));
+          return res;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
     );
     return;
   }

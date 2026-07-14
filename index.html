@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SGP Weather Tool — Strange Goose Productions</title>
+  <meta name="description" content="Multi-model weather comparison for film production crews. Compares 8 forecast models (UKMO, ECMWF, GFS, ICON, GEM, MF, KNMI, DMI) for UK locations.">
+  <meta property="og:title" content="SGP Weather Tool">
+  <meta property="og:description" content="Multi-model weather comparison for film production crews.">
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -23,8 +27,8 @@
         <path d="M16 8c-4.418 0-8 3.582-8 8s3.582 8 8 8 8-3.582 8-8-3.582-8-8-8z" fill="#E07B39" opacity="0.6"/>
         <path d="M16 12c-2.209 0-4 1.791-4 4s1.791 4 4 4 4-1.791 4-4-1.791-4-4-4z" fill="#E07B39"/>
       </svg>
-      <span class="brand-name">Strange Goose Productions</span>
-      <span class="build-number">b016</span>
+      <h1 class="brand-name">Strange Goose Productions</h1>
+      <span class="build-number">b019</span>
     </div>
     <p class="brand-subtitle">SGP Weather Tool</p>
   </header>
@@ -40,8 +44,12 @@
           placeholder="e.g. SW1A 1AA"
           autocomplete="postal-code"
           spellcheck="false"
+          required
+          pattern="[A-Za-z0-9 ]{5,7}"
+          maxlength="8"
         >
         <button type="submit" id="check-btn" class="check-btn">Check weather</button>
+        <button type="button" id="locate-btn" class="locate-btn" title="Detect your location">Use my location</button>
       </form>
       <p id="input-hint" class="input-hint">Enter a UK postcode to see next Saturday's multi-model forecast</p>
     </section>
@@ -64,8 +72,6 @@
         <span id="verdict-icon" class="verdict-icon"></span>
         <span id="verdict-text" class="verdict-text"></span>
       </div>
-
-      <p id="summary-line" class="summary-line hidden"></p>
 
       <div class="controls-row">
         <div class="date-control">
