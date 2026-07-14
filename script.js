@@ -808,6 +808,8 @@ async function handleSubmit(e) {
     lastEnsembleData = ensembleRes;
     localStorage.setItem('weather_postcode', input.value.trim().toUpperCase());
     initDatePicker();
+    const restoredDate = localStorage.getItem('weather_date');
+    if (restoredDate) selectDay.value = restoredDate;
     handleDateChange();
   } catch (err) {
     if (token !== requestToken) return;
@@ -823,6 +825,8 @@ function handleRangeChange() {
   let startH = parseInt(hourStart.value, 10);
   let endH = parseInt(hourEnd.value, 10);
   if (endH < startH) { endH = startH; hourEnd.value = startH; }
+  localStorage.setItem('weather_hour_start', startH);
+  localStorage.setItem('weather_hour_end', endH);
   showResults(lastSelectedDate, lastRows, lastModels, startH, endH);
 }
 
@@ -837,6 +841,10 @@ hourEnd.addEventListener('change', handleRangeChange);
 
 /* ── Restore saved state ── */
 
+const savedStart = localStorage.getItem('weather_hour_start');
+const savedEnd = localStorage.getItem('weather_hour_end');
+if (savedStart) hourStart.value = savedStart;
+if (savedEnd) hourEnd.value = savedEnd;
 const savedDate = localStorage.getItem('weather_date');
 if (savedDate) selectDay.value = savedDate;
 const savedPostcode = localStorage.getItem('weather_postcode');
