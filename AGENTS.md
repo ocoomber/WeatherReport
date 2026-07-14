@@ -40,7 +40,6 @@ Add new models to `MODELS` array. Verify each model ID works by hitting the API 
 - Agreement labels use fraction format (e.g. `18/48 dry`) in period distribution and per-model breakdown to avoid confusion with temperature readings.
 - Every metric cell is color-coded via `classifyCell()` — green/amber/red thresholds per metric.
 - Persistence via localStorage keys: `weather_postcode`, `weather_date`, `weather_hour_start`, `weather_hour_end`. Restored on page load.
-- The `<p id="summary-line">` only shows text for mixed/low-confidence cases now (early returns were removed).
 
 ## Gotchas
 
