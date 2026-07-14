@@ -497,7 +497,20 @@ body {
   line-height: 0;
 }
 
+.verdict-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .verdict-text {
+  line-height: 1.3;
+}
+
+.verdict-summary {
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.9;
   line-height: 1.3;
 }
 
