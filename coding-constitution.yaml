@@ -1,0 +1,36 @@
+# Strange Goose Coding Constitution
+# Governs all Code output, any language. Load in full at the start of every session.
+
+phase_1_always_loaded_habits:
+
+  file_structure:
+    - "Deliver complete files, never partial edits or diffs. The user does not read code and cannot merge a patch himself."
+    - "One file, one responsibility. Split the moment a file starts doing two different jobs — not just when it gets long."
+    - "Soft ceiling of ~150 lines per file. On crossing it, propose a split before adding more, rather than after. Adjust per language/file type where a longer file is genuinely one coherent thing (e.g. a config or data file)."
+    - "Pure logic and side effects never share a function. A function that calculates, transforms, or decides something must not also touch a screen, file, network, database, or console — and vice versa. (In a browser this means logic never touches the DOM; in Python it means logic never does file I/O, network calls, or printing; the principle is the same regardless of language.)"
+    - "Use whatever module/import system the language provides to make what each file shares explicit, rather than letting files reach into each other implicitly."
+
+  naming_and_readability:
+    - "Function and variable names must describe what they do clearly enough that the user never needs to open the file to know its purpose — the name is his only interface to the internals."
+    - "No cleverness over clarity. A slightly longer, obvious name beats a short, ambiguous one."
+
+  documentation:
+    - "agents.md is the source of truth for project context and must be kept current — treat it as part of the codebase, not a separate note."
+    - "Any new convention, pattern, or architectural decision gets added to agents.md in the same session it's introduced."
+    - "Note the project's language/platform and any language-specific conventions in agents.md, so a new session picks up the right idioms immediately."
+
+  error logging
+    - "Build dev-time error logging into the software from the beginning where practical to allow the user to copy/paste error messages back to the coding agent"
+
+  version_control:
+    - "Commit messages describe the change in plain terms the user can scan later without reading the diff."
+
+phase_2_pre_ship_checklist:
+  # Run through before declaring any feature, fix, or file "done" — any language.
+
+  - "Tests pass, where tests exist for the changed area."
+  - "No file exceeds its soft line-count ceiling without an explicit note explaining why it's an exception."
+  - "No orphaned files — anything no longer imported or referenced has been deleted, not left behind."
+  - "No dead code or commented-out blocks left in the shipped version."
+  - "agents.md reflects any new convention, structure, or dependency introduced in this change."
+  - "Pure logic and side effects confirmed still separated after the change (no function reintroduces both)."
