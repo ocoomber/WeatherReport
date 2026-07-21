@@ -36,4 +36,5 @@ const hourStart = document.getElementById('hour-start');
 const hourEnd = document.getElementById('hour-end');
 const rangeHint = document.getElementById('range-hint');
 const selectDay = document.getElementById('forecast-date');
+const todayBtn = document.getElementById('today-btn');
 const updateBtn = document.getElementById('update-btn');

@@ -275,6 +275,26 @@ body {
   cursor: pointer;
 }
 
+.today-btn {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.today-btn:focus { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.today-btn:focus:not(:focus-visible) { outline: none; }
+.today-btn:focus-visible { outline: 2px solid var(--amber-deep); outline-offset: 2px; }
+.today-btn:hover { border-color: var(--amber-deep); color: var(--amber-deep); }
+.today-btn:active { background: #f9f1e6; }
+
 .update-btn {
   font-family: var(--font-body);
   font-weight: 600;

@@ -22,6 +22,12 @@ async function handleUseLocation() {
   }
 }
 
+function handleTodayClick() {
+  selectDay.value = dateStr(new Date());
+  storage.set('weather_date', selectDay.value);
+  handleDateChange();
+}
+
 function handleDateChange() {
   if (!lastRawData) return;
   const dateVal = selectDay.value;
