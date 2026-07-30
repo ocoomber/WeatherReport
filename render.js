@@ -166,7 +166,7 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
   renderVerdictBanner(verdict, summary);
 
   renderPeriodSummary(getPeriodData(filtered, visibleModels, aggr));
-  renderHourStrip(getHourStripData(filtered, aggr));
+  // renderHourStrip(getHourStripData(filtered, aggr)); // hour strip disabled
   renderTables(getTableData(filtered, modelsPresent, aggr));
 
   resultsSection.classList.remove('hidden');
