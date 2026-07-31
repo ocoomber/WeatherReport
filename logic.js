@@ -206,6 +206,16 @@ function getTableData(filtered, modelsPresent, agreement, nowHours) {
 
     const rows = filtered.map((row, ri) => {
       const isNow = nowHours && row.hour >= nowHours.start && row.hour <= nowHours.end;
+      let className = '';
+      if (isNow) {
+        const prev = ri > 0 ? filtered[ri - 1] : null;
+        const next = ri < filtered.length - 1 ? filtered[ri + 1] : null;
+        const prevNow = prev && nowHours && prev.hour >= nowHours.start && prev.hour <= nowHours.end;
+        const nextNow = next && nowHours && next.hour >= nowHours.start && next.hour <= nowHours.end;
+        className = 'row-now';
+        if (!prevNow) className += ' row-now-top';
+        if (!nextNow) className += ' row-now-bottom';
+      }
       const cells = [{ text: formatHour(row.hour) }];
       for (const mp of metricModels) {
         const val = row.models[mp.id]?.[metric.key];
@@ -230,7 +240,7 @@ function getTableData(filtered, modelsPresent, agreement, nowHours) {
           }
         }
       }
-      return { cells, className: isNow ? 'row-now' : '' };
+      return { cells, className };
     });
 
     let agreementRow = null;

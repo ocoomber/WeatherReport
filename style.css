@@ -430,17 +430,20 @@ body {
   border-bottom: none;
 }
 
-.weather-table tbody tr.row-now td {
-  border-top: 2px solid var(--amber-deep);
-  border-bottom: 2px solid var(--amber-deep);
-}
-
 .weather-table tbody tr.row-now td:first-child {
   border-left: 2px solid var(--amber-deep);
 }
 
 .weather-table tbody tr.row-now td:last-child {
   border-right: 2px solid var(--amber-deep);
+}
+
+.weather-table tbody tr.row-now-top td {
+  border-top: 2px solid var(--amber-deep);
+}
+
+.weather-table tbody tr.row-now-bottom td {
+  border-bottom: 2px solid var(--amber-deep);
 }
 
 .weather-table .model-label {
