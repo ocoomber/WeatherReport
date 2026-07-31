@@ -108,6 +108,12 @@ function filterHours(rows, startH, endH) {
   return rows.filter(r => r.hour >= startH && r.hour <= endH);
 }
 
+function getNowHours(selectedDate, nowDate) {
+  if (dateStr(nowDate) !== dateStr(selectedDate)) return null;
+  const h = nowDate.getHours();
+  return { start: h, end: Math.min(h + 2, 23) };
+}
+
 function classifyPrecip(val) {
   if (val === null || val === undefined || isNaN(val)) return null;
   if (val < 20) return 'dry';
@@ -179,7 +185,7 @@ function modelDayAgreement(rows, modelsPresent) {
   });
 }
 
-function getTableData(filtered, modelsPresent, agreement) {
+function getTableData(filtered, modelsPresent, agreement, nowHours) {
   const visibleModels = modelsPresent.filter(m => m.present);
   if (!visibleModels.length || !filtered.length) return null;
   const modelDayAgree = modelDayAgreement(filtered, visibleModels);
@@ -199,6 +205,7 @@ function getTableData(filtered, modelsPresent, agreement) {
     ];
 
     const rows = filtered.map((row, ri) => {
+      const isNow = nowHours && row.hour >= nowHours.start && row.hour <= nowHours.end;
       const cells = [{ text: formatHour(row.hour) }];
       for (const mp of metricModels) {
         const val = row.models[mp.id]?.[metric.key];
@@ -223,7 +230,7 @@ function getTableData(filtered, modelsPresent, agreement) {
           }
         }
       }
-      return { cells };
+      return { cells, className: isNow ? 'row-now' : '' };
     });
 
     let agreementRow = null;

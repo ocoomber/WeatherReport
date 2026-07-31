@@ -34,6 +34,7 @@ function renderTables(metricTables) {
     const tbody = document.createElement('tbody');
     for (const row of rows) {
       const tr = document.createElement('tr');
+      if (row.className) tr.className = row.className;
       for (const cell of row.cells) {
         const td = document.createElement('td');
         td.textContent = cell.text;
@@ -167,7 +168,7 @@ function showResults(selectedDate, rows, modelsPresent, startH, endH) {
 
   renderPeriodSummary(getPeriodData(filtered, visibleModels, aggr));
   // renderHourStrip(getHourStripData(filtered, aggr)); // hour strip disabled
-  renderTables(getTableData(filtered, modelsPresent, aggr));
+  renderTables(getTableData(filtered, modelsPresent, aggr, getNowHours(selectedDate, new Date())));
 
   resultsSection.classList.remove('hidden');
   errorEl.classList.add('hidden');
